@@ -1,6 +1,5 @@
 import anthropic
 import requests
-import json
 import os
 import random
 from datetime import datetime
@@ -10,22 +9,54 @@ from datetime import datetime
 # ============================================================
 
 BLOG_TOPICS = [
+    "Dhurandhar movie Ranbir Kapoor",
     "Bollywood box office collection this week",
     "Latest Bollywood celebrity news",
-    "Upcoming Bollywood movies 2025",
-    "Bollywood celebrity relationships and gossip",
-    "Best Bollywood songs trending on YouTube",
-    "Bollywood actor fitness and lifestyle secrets",
-    "Bollywood movie reviews and ratings",
+    "Upcoming Bollywood movies 2026",
+    "Bollywood celebrity relationships gossip",
+    "Best Bollywood songs trending YouTube",
+    "Bollywood movie reviews ratings",
     "OTT releases this week Bollywood",
-    "Bollywood award shows and red carpet looks",
-    "Bollywood controversies and viral moments",
+    "Bollywood award shows red carpet",
+    "Bollywood controversies viral moments",
 ]
 
 # ============================================================
 
 def get_topic():
     return random.choice(BLOG_TOPICS)
+
+def get_image_url(topic):
+    try:
+        api_key = os.environ["GOOGLE_API_KEY"]
+        cx = os.environ["GOOGLE_CX"]
+        
+        search_query = f"{topic} bollywood"
+        url = f"https://www.googleapis.com/customsearch/v1"
+        params = {
+            "key": api_key,
+            "cx": cx,
+            "q": search_query,
+            "searchType": "image",
+            "num": 3,
+            "imgType": "photo",
+            "safe": "active"
+        }
+        
+        response = requests.get(url, params=params)
+        data = response.json()
+        
+        if "items" in data and len(data["items"]) > 0:
+            image_url = data["items"][0]["link"]
+            print(f"🖼️ Image mili: {image_url}")
+            return image_url
+        else:
+            print("⚠️ Image nahi mili, bina image ke publish karenge")
+            return None
+            
+    except Exception as e:
+        print(f"⚠️ Image search error: {e}")
+        return None
 
 def write_blog_post(topic):
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
@@ -43,12 +74,12 @@ Requirements:
 - Add SEO-friendly keywords naturally
 - Make it feel like a real entertainment blog, not AI-generated
 - Use HTML formatting: <h2> for subheadings, <p> for paragraphs, <b> for emphasis
-- Do NOT include the main title in HTML, only the body content with h2/p tags
+- Do NOT include the main title in HTML, only the body content
 
 Return format:
 Line 1: Blog post title (plain text)
-Line 2: Empty line  
-Line 3 onwards: Full HTML blog content (only body content, no <html>/<head>/<body> tags)"""
+Line 2: Empty line
+Line 3 onwards: Full HTML blog content"""
 
     message = client.messages.create(
         model="claude-sonnet-4-20250514",
@@ -62,6 +93,27 @@ Line 3 onwards: Full HTML blog content (only body content, no <html>/<head>/<bod
     content = '\n'.join(lines[2:]).strip()
     
     return title, content
+
+def add_image_to_content(content, image_url, topic):
+    if not image_url:
+        return content
+    
+    image_html = f"""
+<div style="text-align:center; margin: 20px 0;">
+  <img src="{image_url}" 
+       alt="{topic}" 
+       style="max-width:100%; height:auto; border-radius:8px;">
+  <p style="font-size:12px; color:gray;">Image: {topic}</p>
+</div>
+"""
+    
+    if "</p>" in content:
+        first_p_end = content.index("</p>") + 4
+        content = content[:first_p_end] + image_html + content[first_p_end:]
+    else:
+        content = image_html + content
+    
+    return content
 
 def get_access_token():
     token_url = "https://oauth2.googleapis.com/token"
@@ -77,22 +129,17 @@ def get_access_token():
 def publish_to_blogger(title, content):
     access_token = get_access_token()
     blog_id = os.environ["BLOGGER_BLOG_ID"]
-    
     url = f"https://www.googleapis.com/blogger/v3/blogs/{blog_id}/posts/"
-    
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
-    
     post_data = {
         "title": title,
         "content": content,
         "labels": ["Bollywood", "Entertainment", "Hindi Cinema"]
     }
-    
     response = requests.post(url, headers=headers, json=post_data)
-    
     if response.status_code == 200:
         post_url = response.json().get('url', 'N/A')
         print(f"✅ Post published! URL: {post_url}")
@@ -104,7 +151,9 @@ if __name__ == "__main__":
     print("🎬 Bollywood Blog Writer starting...")
     topic = get_topic()
     print(f"📝 Topic: {topic}")
+    image_url = get_image_url(topic)
     title, content = write_blog_post(topic)
+    content = add_image_to_content(content, image_url, topic)
     print(f"✍️ Written: {title}")
     publish_to_blogger(title, content)
     print("🚀 Done!")

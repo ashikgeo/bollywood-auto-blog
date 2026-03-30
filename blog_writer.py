@@ -75,7 +75,7 @@ Line 1: Blog post title (plain text)
 Line 2: Empty line
 Line 3 onwards: Full HTML blog content"""
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_key}"
     
     payload = {
         "contents": [{

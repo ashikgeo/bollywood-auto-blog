@@ -1,7 +1,7 @@
-import anthropic
 import requests
 import os
 import random
+import json
 from datetime import datetime
 
 # ============================================================
@@ -30,36 +30,30 @@ def get_image_url(topic):
     try:
         api_key = os.environ["GOOGLE_API_KEY"]
         cx = os.environ["GOOGLE_CX"]
-        
-        search_query = f"{topic} bollywood"
-        url = f"https://www.googleapis.com/customsearch/v1"
         params = {
             "key": api_key,
             "cx": cx,
-            "q": search_query,
+            "q": f"{topic} bollywood",
             "searchType": "image",
             "num": 3,
             "imgType": "photo",
             "safe": "active"
         }
-        
-        response = requests.get(url, params=params)
+        response = requests.get("https://www.googleapis.com/customsearch/v1", params=params)
         data = response.json()
-        
         if "items" in data and len(data["items"]) > 0:
             image_url = data["items"][0]["link"]
             print(f"🖼️ Image mili: {image_url}")
             return image_url
         else:
-            print("⚠️ Image nahi mili, bina image ke publish karenge")
+            print("⚠️ Image nahi mili")
             return None
-            
     except Exception as e:
-        print(f"⚠️ Image search error: {e}")
+        print(f"⚠️ Image error: {e}")
         return None
 
 def write_blog_post(topic):
-    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    gemini_key = os.environ["GEMINI_API_KEY"]
     
     prompt = f"""You are an expert Bollywood blogger. Write a detailed, SEO-optimized blog post about:
 
@@ -81,13 +75,25 @@ Line 1: Blog post title (plain text)
 Line 2: Empty line
 Line 3 onwards: Full HTML blog content"""
 
-    message = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=2000,
-        messages=[{"role": "user", "content": prompt}]
-    )
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
     
-    response_text = message.content[0].text
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }],
+        "generationConfig": {
+            "temperature": 0.9,
+            "maxOutputTokens": 2048
+        }
+    }
+    
+    response = requests.post(url, json=payload)
+    data = response.json()
+    
+    if response.status_code != 200:
+        raise Exception(f"Gemini error: {data}")
+    
+    response_text = data["candidates"][0]["content"]["parts"][0]["text"]
     lines = response_text.split('\n')
     title = lines[0].strip()
     content = '\n'.join(lines[2:]).strip()
@@ -97,33 +103,26 @@ Line 3 onwards: Full HTML blog content"""
 def add_image_to_content(content, image_url, topic):
     if not image_url:
         return content
-    
     image_html = f"""
 <div style="text-align:center; margin: 20px 0;">
-  <img src="{image_url}" 
-       alt="{topic}" 
-       style="max-width:100%; height:auto; border-radius:8px;">
+  <img src="{image_url}" alt="{topic}" style="max-width:100%; height:auto; border-radius:8px;">
   <p style="font-size:12px; color:gray;">Image: {topic}</p>
-</div>
-"""
-    
+</div>"""
     if "</p>" in content:
         first_p_end = content.index("</p>") + 4
         content = content[:first_p_end] + image_html + content[first_p_end:]
     else:
         content = image_html + content
-    
     return content
 
 def get_access_token():
-    token_url = "https://oauth2.googleapis.com/token"
     data = {
         "client_id": os.environ["BLOGGER_CLIENT_ID"],
         "client_secret": os.environ["BLOGGER_CLIENT_SECRET"],
         "refresh_token": os.environ["BLOGGER_REFRESH_TOKEN"],
         "grant_type": "refresh_token"
     }
-    response = requests.post(token_url, data=data)
+    response = requests.post("https://oauth2.googleapis.com/token", data=data)
     return response.json()["access_token"]
 
 def publish_to_blogger(title, content):

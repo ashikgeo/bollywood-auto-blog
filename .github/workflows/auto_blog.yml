@@ -2,39 +2,32 @@ name: Bollywood Auto Blog Publisher
 
 on:
   schedule:
-    # Daily post — har roz subah 4:30 AM UTC (= 10:00 AM IST)
     - cron: '30 4 * * *'
-    
-    # Weekly post — har Sunday 5:00 AM UTC (= 10:30 AM IST)
-    # - cron: '0 5 * * 0'
-    
-  # Manual trigger bhi kar sakte ho anytime
   workflow_dispatch:
 
 jobs:
   publish-blog:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-    
+
     - name: Python setup karo
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-    
+
     - name: Dependencies install karo
-      run: pip install anthropic requests
-    
+      run: pip install requests
+
     - name: Blog post likho aur publish karo
-     env:
-  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-  BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
-  BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
-  BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
-  BLOGGER_BLOG_ID: ${{ secrets.BLOGGER_BLOG_ID }}
-  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-  GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-  GOOGLE_CX: ${{ secrets.GOOGLE_CX }}
+      env:
+        BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+        BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+        BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+        BLOGGER_BLOG_ID: ${{ secrets.BLOGGER_BLOG_ID }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        GOOGLE_CX: ${{ secrets.GOOGLE_CX }}
       run: python blog_writer.py

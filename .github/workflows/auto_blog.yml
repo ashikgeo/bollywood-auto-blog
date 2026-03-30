@@ -28,10 +28,13 @@ jobs:
       run: pip install anthropic requests
     
     - name: Blog post likho aur publish karo
-      env:
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
-        BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
-        BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
-        BLOGGER_BLOG_ID: ${{ secrets.BLOGGER_BLOG_ID }}
+     env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+  BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+  BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+  BLOGGER_BLOG_ID: ${{ secrets.BLOGGER_BLOG_ID }}
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+  GOOGLE_CX: ${{ secrets.GOOGLE_CX }}
       run: python blog_writer.py
